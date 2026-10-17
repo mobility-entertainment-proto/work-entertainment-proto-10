@@ -1,0 +1,592 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#1e4fa8">
+<title>在席で育てる観葉植物</title>
+<style>
+  :root {
+    --primary: #1e4fa8;
+    --primary-dark: #173f88;
+    --text: #222;
+    --muted: #555;
+    --line: #8a8a8a;
+    --bg: #f5f5f5;
+    --footer: #ebebeb;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Hiragino Sans", "Hiragino Kaku Gothic ProN", "Noto Sans JP", sans-serif;
+    color: var(--text);
+    background: var(--bg);
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+  }
+
+  /* ヘッダー */
+  header {
+    background: var(--primary);
+    color: #fff;
+    display: flex;
+    align-items: center;
+    padding: 8px 12px;
+    padding-top: calc(8px + env(safe-area-inset-top));
+    gap: 12px;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+  }
+  .icon-btn { background: none; border: 0; color: inherit; padding: 4px; cursor: pointer; display: flex; }
+  .brand { font-size: 24px; letter-spacing: .5px; flex: 1; }
+  .user-box { text-align: right; font-size: 14px; line-height: 1.4; min-width: 0; }
+  .user-box .email { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 150px; }
+  .status { display: flex; align-items: center; justify-content: flex-end; gap: 4px; }
+  .status .dot { width: 12px; height: 12px; border-radius: 50%; background: #6cc24a; border: 1px solid #fff; }
+
+  /* 本体 */
+  main { flex: 1; width: 100%; max-width: 480px; margin: 0 auto; padding: 32px 24px 40px; }
+  .screen { display: none; }
+  .screen.active { display: block; }
+  h1 { font-size: 17px; font-weight: 500; text-align: center; margin: 24px 0 20px; }
+
+  .field { display: grid; grid-template-columns: 84px 1fr; align-items: end; gap: 12px; margin-bottom: 18px; }
+  .field label { text-align: right; font-size: 15px; padding-bottom: 6px; }
+  .field input, .field .value {
+    font: inherit; font-size: 15px; color: var(--text);
+    border: 0; border-bottom: 1px solid var(--line);
+    background: transparent; padding: 6px 0; width: 100%; min-width: 0;
+    border-radius: 0; outline: none;
+  }
+  .field input:focus { border-bottom: 2px solid var(--primary); padding-bottom: 5px; }
+  .field .value { word-break: break-all; }
+
+  .actions { margin-top: 40px; display: grid; gap: 14px; }
+  .btn {
+    display: flex; align-items: center; justify-content: center; gap: 10px;
+    font: inherit; font-size: 18px; height: 56px; border-radius: 4px; cursor: pointer;
+    border: 2px solid var(--primary); transition: background .15s, transform .05s;
+  }
+  .btn:active { transform: scale(.99); }
+  .btn-primary { background: var(--primary); color: #fff; box-shadow: 0 2px 4px rgba(0,0,0,.2); }
+  .btn-primary:hover { background: var(--primary-dark); }
+  .btn-outline { background: #fff; color: var(--primary); }
+  .btn-outline:hover { background: #eef3fc; }
+
+  .plant-link { width: 100%; display: flex; align-items: center; gap: 12px; margin-top: 20px; background: #fff; border: 1px solid #dde3ee; border-radius: 12px; padding: 8px 12px; font: inherit; font-size: 14px; text-align: left; color: var(--text); cursor: pointer; }
+  .plant-link > span:nth-child(2) { flex: 1; }
+  .plant-link small { color: var(--muted); }
+  .plant-link .thumb { width: 48px; height: 60px; border-radius: 8px; background: #eaf6ea; overflow: hidden; display: flex; }
+  .plant-link .thumb svg { width: 100%; height: 100%; }
+  .plant-link > svg { color: var(--muted); }
+
+  /* 完了画面 */
+  .done { text-align: center; padding-top: 8px; }
+  .done h2 { font-size: 20px; font-weight: 600; margin: 0 0 14px; }
+  .summary { background: #fff; border-radius: 6px; padding: 16px 20px; text-align: left; font-size: 14px; margin: 20px 0 24px; box-shadow: 0 1px 2px rgba(0,0,0,.08); }
+  .summary dl { display: grid; grid-template-columns: 84px 1fr; gap: 10px 12px; margin: 0; }
+  .summary dt { color: var(--muted); }
+  .summary dd { margin: 0; word-break: break-all; }
+  .stack { display: grid; gap: 12px; }
+
+  /* 部屋（植物の背景） */
+  .room { position: relative; height: 320px; border-radius: 16px 16px 0 0; overflow: hidden; }
+  .room.day { background: linear-gradient(#f7efe2 0 72%, #e3d2b8 72%); }
+  .room.night { background: linear-gradient(#2a2f4f 0 72%, #3a3550 72%); }
+  .room .window { position: absolute; left: 24px; top: 22px; width: 110px; height: 130px; border: 6px solid #fff; border-radius: 6px; box-shadow: 0 2px 6px rgba(0,0,0,.1); overflow: hidden; }
+  .room.day .window { background: linear-gradient(#8fd0ff, #d6f0ff); }
+  .room.night .window { background: linear-gradient(#0d1430, #26315c); border-color: #c9c3d8; }
+  .room .window::before { content: ""; position: absolute; left: 50%; top: 0; bottom: 0; width: 6px; margin-left: -3px; background: inherit; background: #fff; }
+  .room.night .window::before { background: #c9c3d8; }
+  .room .window::after { content: ""; position: absolute; width: 26px; height: 26px; border-radius: 50%; right: 10px; top: 14px; }
+  .room.day .window::after { background: #ffd34d; box-shadow: 0 0 16px #ffe58a; }
+  .room.night .window::after { background: #fff4c2; box-shadow: -6px 0 0 0 #0d1430 inset, 0 0 12px #fff4c2; }
+  .room .shelf { position: absolute; left: 0; right: 0; top: 72%; height: 6px; background: rgba(0,0,0,.06); }
+  .room .plant { position: absolute; left: 50%; bottom: 10px; width: 210px; height: 262px; margin-left: -105px; cursor: pointer; -webkit-tap-highlight-color: transparent; }
+  .room .plant svg { width: 100%; height: 100%; overflow: visible; }
+  .room .zzz { position: absolute; left: 60%; top: 30%; color: #fff; font-weight: 800; font-size: 20px; opacity: 0; }
+  .room.night .zzz { animation: zzz 3s ease-in-out infinite; }
+  @keyframes zzz { 0% { opacity: 0; transform: translate(0, 10px) scale(.6); } 40% { opacity: 1; } 100% { opacity: 0; transform: translate(20px, -30px) scale(1.2); } }
+
+  /* 植物のアニメーション */
+  .leaf { animation: sway 3.6s ease-in-out infinite; }
+  @keyframes sway { 0%,100% { transform: rotate(0); } 50% { transform: rotate(4deg); } }
+  .plant.shake .sway-all { animation: wobble .9s ease-in-out; transform-origin: 120px 214px; }
+  @keyframes wobble { 0%,100% { transform: rotate(0); } 20% { transform: rotate(-6deg); } 45% { transform: rotate(5deg); } 70% { transform: rotate(-3deg); } 85% { transform: rotate(1deg); } }
+  .plant.grow .sway-all { animation: grow 1s cubic-bezier(.2,1.6,.4,1); transform-origin: 120px 214px; }
+  @keyframes grow { 0% { transform: scale(.85, .7); } 100% { transform: scale(1); } }
+  .bubble { position: absolute; left: 50%; top: 14px; transform: translateX(-10%); background: #fff; border-radius: 14px; padding: 8px 12px; font-size: 13px; font-weight: 700; color: #2d6a3e; box-shadow: 0 2px 8px rgba(0,0,0,.15); white-space: nowrap; opacity: 0; transition: opacity .3s, transform .3s; pointer-events: none; z-index: 3; }
+  .bubble::after { content: ""; position: absolute; left: 22px; bottom: -7px; border: 7px solid transparent; border-top-color: #fff; border-bottom: 0; }
+  .bubble.show { opacity: 1; transform: translateX(-10%) translateY(-4px); }
+
+  /* じょうろ */
+  .can { position: absolute; left: 50%; top: 36px; width: 110px; margin-left: 4px; opacity: 0; z-index: 2; transform-origin: 75% 60%; }
+  .can.go { animation: can 2.6s ease-in-out forwards; }
+  @keyframes can { 0% { opacity: 0; transform: translate(60px, -20px); } 15% { opacity: 1; transform: translate(0, 0) rotate(0); } 30%, 75% { transform: rotate(-32deg); } 90% { opacity: 1; transform: rotate(0); } 100% { opacity: 0; transform: translate(60px, -20px); } }
+  .drops { position: absolute; left: 50%; top: 100px; width: 60px; height: 120px; margin-left: -14px; pointer-events: none; z-index: 2; }
+  .drops i { position: absolute; top: 0; width: 6px; height: 10px; border-radius: 50% 50% 50% 50% / 60% 60% 40% 40%; background: #4aa3df; opacity: 0; }
+  .drops.go i { animation: drop .6s ease-in infinite; }
+  @keyframes drop { 0% { opacity: 0; transform: translateY(0); } 20% { opacity: 1; } 100% { opacity: 0; transform: translateY(110px); } }
+  .sparkle { position: absolute; font-size: 18px; color: #f7c948; opacity: 0; z-index: 2; }
+  .sparkle.go { animation: sparkle 1.2s ease-out forwards; }
+  @keyframes sparkle { 0% { opacity: 0; transform: scale(.3); } 40% { opacity: 1; transform: scale(1.2); } 100% { opacity: 0; transform: scale(.8) translateY(-20px); } }
+
+  /* 情報パネル */
+  .panel { background: #fff; border-radius: 0 0 16px 16px; padding: 14px 16px 16px; box-shadow: 0 4px 12px rgba(0,0,0,.08); text-align: left; }
+  .panel .msg { font-size: 16px; font-weight: 700; margin-bottom: 4px; }
+  .panel .sub { font-size: 13px; color: var(--muted); margin-bottom: 12px; line-height: 1.5; }
+  .panel .name-row { display: flex; align-items: baseline; gap: 8px; }
+  .panel .name-row b { font-size: 18px; }
+  .stage-tag { font-size: 12px; font-weight: 700; color: #2d6a3e; background: #e3f4e6; border-radius: 999px; padding: 2px 10px; }
+  .mood-tag { font-size: 12px; font-weight: 700; border-radius: 999px; padding: 2px 10px; }
+  .mood-tag.happy { background: #fff3cd; color: #9a6b00; }
+  .mood-tag.thirsty { background: #e3f0fb; color: #1f618d; }
+  .mood-tag.wilted { background: #f3e6e6; color: #8e3b3b; }
+  .mood-tag.sleep { background: #e8e6f3; color: #4a4580; }
+  .growbar { height: 10px; background: #e6efe7; border-radius: 5px; overflow: hidden; margin: 8px 0 4px; }
+  .growbar div { height: 100%; background: linear-gradient(90deg, #7bc67e, #3e9b55); border-radius: 5px; transition: width 1s; }
+  .growtext { font-size: 12px; color: var(--muted); }
+  .stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin: 14px 0; }
+  .stats div { background: #f4f8f4; border-radius: 10px; padding: 8px; text-align: center; }
+  .stats b { display: block; font-size: 20px; color: #2d6a3e; }
+  .stats span { font-size: 11px; color: var(--muted); }
+  .road { display: flex; justify-content: space-between; margin: 6px 0 4px; }
+  .road div { text-align: center; font-size: 10px; color: #aaa; flex: 1; }
+  .road div i { display: block; width: 14px; height: 14px; margin: 0 auto 4px; border-radius: 50%; background: #e1e6e1; }
+  .road div.done-st { color: #2d6a3e; font-weight: 700; }
+  .road div.done-st i { background: #3e9b55; }
+  .road div.now i { box-shadow: 0 0 0 4px rgba(62,155,85,.25); }
+  .demo { display: flex; flex-wrap: wrap; justify-content: center; gap: 4px 14px; margin-top: 6px; }
+  .demo button { background: none; border: 0; color: #999; font-size: 12px; text-decoration: underline; cursor: pointer; }
+  .rename { background: none; border: 0; color: var(--primary); font-size: 12px; cursor: pointer; margin-left: auto; }
+
+  /* 成長おめでとう */
+  .celebrate { position: fixed; inset: 0; background: rgba(20,40,25,.8); display: none; flex-direction: column; align-items: center; justify-content: center; z-index: 40; color: #fff; text-align: center; padding: 24px; }
+  .celebrate.open { display: flex; }
+  .celebrate .pic { width: 200px; height: 250px; animation: pop .7s cubic-bezier(.2,1.6,.4,1); }
+  .celebrate .pic svg { width: 100%; height: 100%; overflow: visible; }
+  @keyframes pop { from { transform: scale(.4); opacity: 0; } }
+  .celebrate h3 { font-size: 22px; margin: 10px 0 4px; color: #b9f5c3; }
+  .celebrate p { margin: 0 0 20px; font-size: 14px; }
+  .celebrate .btn { min-width: 200px; background: #b9f5c3; color: #1f4d2b; border-color: #b9f5c3; font-weight: 800; }
+  .falling { position: fixed; top: -30px; font-size: 22px; pointer-events: none; z-index: 41; animation: fall linear forwards; }
+  @keyframes fall { to { transform: translateY(110vh) rotate(360deg); } }
+
+  /* フッター */
+  footer { background: var(--footer); padding: 20px 20px calc(20px + env(safe-area-inset-bottom)); font-size: 14px; }
+  footer nav { display: flex; flex-wrap: wrap; gap: 8px 0; }
+  footer nav a { color: var(--primary); text-decoration: none; padding: 0 12px; border-left: 1px solid #999; }
+  footer nav a:first-child { border-left: 0; padding-left: 0; }
+  footer .copy { color: #888; text-align: center; margin-top: 16px; font-size: 12px; }
+</style>
+</head>
+<body>
+  <header>
+    <button class="icon-btn" aria-label="メニュー">
+      <svg width="26" height="26" viewBox="0 0 24 24" fill="currentColor"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </button>
+    <div class="brand">SEATouch</div>
+    <div class="user-box">
+      <div class="email" id="headerUser"></div>
+      <div class="status">
+        <span class="dot"></span>テレワーク
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M7 10l5 5 5-5z"/></svg>
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M20 2H4a2 2 0 0 0-2 2v18l4-4h14a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2z"/></svg>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <!-- 入力画面 -->
+    <section class="screen active" id="screen-form">
+      <h1>在席退席登録</h1>
+      <div class="field">
+        <label for="card">カード番号</label>
+        <input id="card" type="text" inputmode="numeric" autocomplete="off">
+      </div>
+      <div class="field">
+        <label>ユーザーID</label>
+        <div class="value" id="userId"></div>
+      </div>
+      <div class="field">
+        <label for="comment">コメント</label>
+        <input id="comment" type="text" autocomplete="off">
+      </div>
+      <div class="field">
+        <label for="datetime">日時</label>
+        <input id="datetime" type="datetime-local">
+      </div>
+      <div class="actions">
+        <button class="btn btn-primary" id="btnIn">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><path d="M11 7 9.6 8.4l2.6 2.6H2v2h10.2l-2.6 2.6L11 17l5-5-5-5zm9 12h-8v2h8a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2h-8v2h8v14z"/></svg>
+          在席登録
+        </button>
+        <button class="btn btn-outline" id="btnOut">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><path d="m17 7-1.41 1.41L18.17 11H8v2h10.17l-2.58 2.58L17 17l5-5-5-5zM4 5h8V3H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h8v-2H4V5z"/></svg>
+          退席登録
+        </button>
+      </div>
+      <button class="plant-link" data-go="plant">
+        <span class="thumb" id="thumbPlant"></span>
+        <span><b id="linkName"></b>の様子を見る<br><small id="linkStage"></small></span>
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M10 6 8.6 7.4 13.2 12l-4.6 4.6L10 18l6-6z"/></svg>
+      </button>
+    </section>
+
+    <!-- 完了画面 -->
+    <section class="screen" id="screen-done">
+      <div class="done">
+        <h2 id="doneTitle">在席登録が完了しました</h2>
+        <div class="room" id="roomDone">
+            <div class="window"></div><div class="shelf"></div>
+            <div class="bubble" id="bubbleDone"></div>
+            <svg class="can" id="can" viewBox="0 0 120 90"><g transform="translate(120 0) scale(-1 1)"><path d="M30 30 h50 v40 a8 8 0 0 1 -8 8 h-34 a8 8 0 0 1 -8 -8z" fill="#5cb3e6" stroke="#2e86c1" stroke-width="3"/><path d="M80 40 q22 -6 28 -24 l6 4 q-6 22 -34 32z" fill="#5cb3e6" stroke="#2e86c1" stroke-width="3"/><ellipse cx="112" cy="16" rx="6" ry="9" fill="#2e86c1" transform="rotate(30 112 16)"/><path d="M38 30 q17 -24 34 0" fill="none" stroke="#2e86c1" stroke-width="5"/></g></svg>
+            <div class="drops" id="drops"><i style="left:4px;animation-delay:0s"></i><i style="left:18px;animation-delay:0.15s"></i><i style="left:30px;animation-delay:0.3s"></i><i style="left:10px;animation-delay:0.45s"></i><i style="left:24px;animation-delay:0.08s"></i><i style="left:36px;animation-delay:0.38s"></i></div>
+            <span class="sparkle" id="sp1" style="left:30%;top:40%">✦</span><span class="sparkle" id="sp2" style="left:64%;top:34%">✦</span><span class="sparkle" id="sp3" style="left:56%;top:58%">✦</span>
+            <div class="plant" id="plantDone"></div>
+            <div class="zzz">Z<small>z</small></div>
+          </div>
+        <div class="panel">
+          <div class="msg" id="doneMsg"></div>
+          <div class="sub" id="doneSub"></div>
+          <div class="growbar"><div id="doneBar"></div></div>
+          <div class="growtext" id="doneGrow"></div>
+        </div>
+        <div class="summary">
+          <dl>
+            <dt>ユーザーID</dt><dd id="sumUser"></dd>
+            <dt>日時</dt><dd id="sumTime"></dd>
+            <dt>コメント</dt><dd id="sumComment"></dd>
+          </dl>
+        </div>
+        <div class="stack">
+          <button class="btn btn-primary" data-go="plant" id="btnToPlant"></button>
+          <button class="btn btn-outline" data-go="form">戻る</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- 植物の様子 -->
+    <section class="screen" id="screen-plant">
+      <div class="room" id="roomMain">
+            <div class="window"></div><div class="shelf"></div>
+            <div class="bubble" id="bubbleMain"></div>
+            
+            <div class="plant" id="plantMain"></div>
+            <div class="zzz">Z<small>z</small></div>
+          </div>
+      <div class="panel">
+        <div class="name-row"><b id="plantName"></b><span class="stage-tag" id="plantStage"></span><span class="mood-tag" id="plantMood"></span><button class="rename" id="btnRename">名前を変える</button></div>
+        <div class="growbar"><div id="plantBar"></div></div>
+        <div class="growtext" id="plantGrow"></div>
+        <div class="stats">
+          <div><b id="statDays">0</b><span>いっしょの日数</span></div>
+          <div><b id="statWater">0</b><span>水やり回数</span></div>
+          <div><b id="statLast">-</b><span>最後の水やり</span></div>
+        </div>
+        <div class="road" id="road"></div>
+        <p class="growtext" style="text-align:center;margin:12px 0 0">植物をタップすると話しかけてくれます</p>
+      </div>
+      <div class="stack" style="margin-top:20px">
+        <button class="btn btn-outline" data-go="form">戻る</button>
+        <div class="demo">
+          <button id="demoWater">+5日分の水やり（デモ）</button>
+          <button id="demoSkip">3日放置する（デモ）</button>
+          <button id="demoReset">はじめから（デモ）</button>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <div class="celebrate" id="celebrate">
+    <div class="pic" id="celebratePic"></div>
+    <h3 id="celebrateTitle"></h3>
+    <p id="celebrateText"></p>
+    <button class="btn" id="btnCelebrate">やったね！</button>
+  </div>
+
+  <footer>
+    <nav>
+      <a href="#">利用規約</a>
+      <a href="#">プライバシーポリシー</a>
+      <a href="#">ウェブアクセシビリティ</a>
+    </nav>
+    <div class="copy">Prototype — 実際の登録は行われません</div>
+  </footer>
+
+<script>
+  const USER_ID = 'taro.yamada@example.com';
+  const STORE_KEY = 'office-plant-v1';
+  // 成長段階：need = 必要な水やり日数
+  const STAGES = [
+    { name: 'たね',     need: 0 },
+    { name: 'め',       need: 1 },
+    { name: 'ふたば',   need: 3 },
+    { name: 'わかば',   need: 6 },
+    { name: 'なえぎ',   need: 10 },
+    { name: 'すくすく', need: 15 },
+    { name: 'つぼみ',   need: 22 },
+    { name: 'まんかい', need: 30 },
+  ];
+  const TALK = {
+    happy:   ['今日もがんばろうね！', 'いい天気だね〜', 'お水おいしかった！', 'ちょっと伸びたかも？', 'いつもありがとう', 'ひなたぼっこ中〜'],
+    thirsty: ['のどがかわいたな…', 'お水ほしいな〜', '明日は来てくれる？'],
+    wilted:  ['しおしお…', 'げんきがでない…', 'お水…ください…'],
+    sleep:   ['むにゃむにゃ…', 'おやすみ〜', 'また明日ね…'],
+  };
+  const $ = (id) => document.getElementById(id);
+
+  $('headerUser').textContent = USER_ID;
+  $('userId').textContent = USER_ID;
+
+  function nowLocal() {
+    const d = new Date();
+    d.setMinutes(d.getMinutes() - d.getTimezoneOffset());
+    return d.toISOString().slice(0, 16);
+  }
+  $('datetime').value = nowLocal();
+  const today = () => nowLocal().slice(0, 10);
+  const dayDiff = (a, b) => Math.round((new Date(b) - new Date(a)) / 86400000);
+  function shiftDay(ymd, n) {
+    const d = new Date(ymd); d.setDate(d.getDate() + n);
+    return d.toISOString().slice(0, 10);
+  }
+
+  // 植物の状態（このブラウザ内にだけ保存）
+  const fresh = () => ({ name: 'グリーンくん', started: today(), days: [] });
+  function load() {
+    try { const v = JSON.parse(localStorage.getItem(STORE_KEY)); if (v && Array.isArray(v.days)) return v; } catch {}
+    return fresh();
+  }
+  let plant = load();
+  function save() { try { localStorage.setItem(STORE_KEY, JSON.stringify(plant)); } catch {} }
+
+  const waterCount = () => plant.days.length;
+  const lastWater = () => plant.days[plant.days.length - 1];
+  const stageIndex = (n = waterCount()) => STAGES.reduce((acc, s, i) => n >= s.need ? i : acc, 0);
+  function mood() {
+    const last = lastWater();
+    const gap = dayDiff(last || plant.started, today());
+    if (gap <= 1) return 'happy';
+    if (gap <= 3) return 'thirsty';
+    return 'wilted';
+  }
+  const MOOD_LABEL = { happy: 'げんき', thirsty: 'のどがかわいた', wilted: 'しおれ気味', sleep: 'おやすみ中' };
+
+  // ---- 植物の絵（段階・気分で描き分け） ----
+  function plantSVG(stage, md, opt = {}) {
+    const wilt = md === 'wilted' ? 1 : md === 'thirsty' ? .4 : 0;
+    const leafColor = wilt === 1 ? '#a3b06b' : wilt ? '#6fae5e' : '#4caf50';
+    const leafDark = wilt === 1 ? '#7f8a4c' : '#2e7d32';
+    const soil = opt.wet ? '#4a3220' : '#6b4a2b';
+    const heights = [0, 22, 36, 60, 86, 110, 126, 136];
+    const counts  = [0, 2, 2, 4, 6, 8, 9, 10];
+    const h = heights[stage], n = counts[stage];
+    const scale = .45 + stage * .085;
+    const bend = wilt * 34;
+    const topX = 120 + bend, topY = 212 - h + wilt * 10;
+    let leaves = '';
+    for (let i = 0; i < n; i++) {
+      const t = n === 2 && stage <= 2 ? 1 : 0.35 + 0.65 * (i / Math.max(1, n - 1));
+      const x = 120 + bend * t * t, y = 212 - (h - wilt * 10) * t;
+      const left = i % 2 === 0;
+      const ang = (left ? 1 : -1) * (stage <= 2 ? 30 : 22 + (1 - t) * 18) + (left ? -1 : 1) * wilt * 58;  // 元気なら上向き、しおれると下に垂れる
+      const s = scale * (stage <= 2 ? .8 : 0.7 + 0.5 * (1 - Math.abs(t - .55)));
+      leaves += `<g transform="translate(${x.toFixed(1)} ${y.toFixed(1)}) rotate(${(left ? 180 + ang : ang).toFixed(1)}) scale(${s.toFixed(2)} ${left ? -s.toFixed(2) : s.toFixed(2)})">
+        <g class="leaf" style="animation-delay:${(i * .37).toFixed(2)}s"><path d="M0 0 C 14 -18, 44 -20, 60 0 C 44 20, 14 18, 0 0Z" fill="${leafColor}" stroke="${leafDark}" stroke-width="2.5"/><path d="M2 0 L54 0" stroke="${leafDark}" stroke-width="2" opacity=".6"/>${stage >= 4 ? `<path d="M22 -9 l-6 9 M38 -9 l-6 9" stroke="#f4fbf2" stroke-width="3" stroke-linecap="round" opacity=".8"/>` : ''}</g></g>`;
+    }
+    let top = '';
+    if (stage === 0) top = `<ellipse cx="120" cy="206" rx="18" ry="10" fill="#7a5a3a"/><ellipse cx="120" cy="198" rx="9" ry="6" fill="#c8a37a" stroke="#8d6e4c" stroke-width="2"/><path d="M120 192 v-6" stroke="#6fbf73" stroke-width="2.5" stroke-linecap="round" opacity=".7"/>`;
+    if (stage === 6) top = `<g transform="translate(${topX} ${topY - 6})"><ellipse rx="10" ry="15" fill="#f7a8c4" stroke="#d76d97" stroke-width="2.5"/><path d="M-8 8 q8 10 16 0" fill="#4caf50"/></g>`;
+    if (stage === 7) top = `<g transform="translate(${topX} ${topY - 10})">${[0, 72, 144, 216, 288].map(a => `<ellipse rx="10" ry="18" cy="-14" fill="#ffb3cf" stroke="#e36b9a" stroke-width="2" transform="rotate(${a})"/>`).join('')}<circle r="9" fill="#ffd34d" stroke="#e0a800" stroke-width="2"/></g>
+      <g transform="translate(${120 - 34} ${212 - h * .62}) scale(.55)">${[0, 72, 144, 216, 288].map(a => `<ellipse rx="10" ry="18" cy="-14" fill="#fff" stroke="#e36b9a" stroke-width="2" transform="rotate(${a})"/>`).join('')}<circle r="9" fill="#ffd34d"/></g>`;
+    const stem = h ? `<path d="M120 214 Q ${120 + bend * .2} ${214 - h * .6} ${topX} ${topY}" fill="none" stroke="${leafDark}" stroke-width="${3 + stage * .6}" stroke-linecap="round"/>` : '';
+    const face = {
+      happy:   `<circle cx="104" cy="248" r="4.5" fill="#4a2a1a"/><circle cx="136" cy="248" r="4.5" fill="#4a2a1a"/><path d="M112 258 q8 8 16 0" fill="none" stroke="#4a2a1a" stroke-width="3" stroke-linecap="round"/><ellipse cx="96" cy="258" rx="6" ry="3.5" fill="#f28b82" opacity=".7"/><ellipse cx="144" cy="258" rx="6" ry="3.5" fill="#f28b82" opacity=".7"/>`,
+      thirsty: `<circle cx="104" cy="249" r="4" fill="#4a2a1a"/><circle cx="136" cy="249" r="4" fill="#4a2a1a"/><ellipse cx="120" cy="261" rx="4" ry="5" fill="#4a2a1a"/><path d="M150 236 q5 8 0 12 q-5 -4 0 -12z" fill="#7ec8f2"/>`,
+      wilted:  `<path d="M98 246 l10 4 M142 246 l-10 4" stroke="#4a2a1a" stroke-width="3" stroke-linecap="round"/><path d="M112 264 q8 -7 16 0" fill="none" stroke="#4a2a1a" stroke-width="3" stroke-linecap="round"/>`,
+      sleep:   `<path d="M98 249 q6 5 12 0 M130 249 q6 5 12 0" fill="none" stroke="#4a2a1a" stroke-width="3" stroke-linecap="round"/><ellipse cx="120" cy="261" rx="3" ry="2.5" fill="#4a2a1a"/><ellipse cx="96" cy="258" rx="6" ry="3.5" fill="#f28b82" opacity=".5"/><ellipse cx="144" cy="258" rx="6" ry="3.5" fill="#f28b82" opacity=".5"/>`,
+    }[md];
+    return `<svg viewBox="0 0 240 300" xmlns="http://www.w3.org/2000/svg">
+      <ellipse cx="120" cy="292" rx="62" ry="7" fill="#000" opacity=".1"/>
+      <g class="sway-all">${stem}${leaves}${top}</g>
+      <path d="M72 222 h96 l-12 66 h-72z" fill="#e07b4f" stroke="#b5532c" stroke-width="3" stroke-linejoin="round"/>
+      <rect x="64" y="208" width="112" height="20" rx="7" fill="#ef9165" stroke="#b5532c" stroke-width="3"/>
+      <ellipse cx="120" cy="212" rx="50" ry="5" fill="${soil}"/>
+      ${face}
+    </svg>`;
+  }
+
+  function show(id) {
+    document.querySelectorAll('.screen').forEach(s => s.classList.toggle('active', s.id === id));
+    window.scrollTo(0, 0);
+  }
+  function go(name) {
+    if (name === 'plant') renderPlantScreen();
+    if (name === 'form') { $('datetime').value = nowLocal(); renderLink(); }
+    show(`screen-${name}`);
+  }
+  document.querySelectorAll('[data-go]').forEach(b => b.addEventListener('click', () => go(b.dataset.go)));
+
+  function growInfo() {
+    const n = waterCount(), si = stageIndex(n), next = STAGES[si + 1];
+    if (!next) return { pct: 100, text: `${plant.name}は満開です！ これからも水やりで元気をキープしよう` };
+    const cur = STAGES[si];
+    return { pct: (n - cur.need) / (next.need - cur.need) * 100, text: `つぎの成長「${next.name}」まで あと${next.need - n}日の水やり` };
+  }
+
+  function renderLink() {
+    $('thumbPlant').innerHTML = plantSVG(stageIndex(), mood());
+    $('linkName').textContent = plant.name;
+    $('linkStage').textContent = `${STAGES[stageIndex()].name} ・ ${MOOD_LABEL[mood()]}`;
+  }
+  renderLink();
+
+  function say(pid, md) {
+    const b = $(`bubble${pid}`);
+    b.textContent = TALK[md][Math.floor(Math.random() * TALK[md].length)];
+    b.classList.add('show');
+    clearTimeout(b._t);
+    b._t = setTimeout(() => b.classList.remove('show'), 2200);
+  }
+  function shake(el) { el.classList.remove('shake', 'grow'); void el.offsetWidth; el.classList.add('shake'); }
+
+  function renderPlantScreen() {
+    const md = mood(), si = stageIndex(), g = growInfo();
+    $('roomMain').className = 'room day';
+    $('plantMain').innerHTML = plantSVG(si, md);
+    $('plantName').textContent = plant.name;
+    $('plantStage').textContent = STAGES[si].name;
+    $('plantMood').textContent = MOOD_LABEL[md];
+    $('plantMood').className = `mood-tag ${md}`;
+    $('plantBar').style.width = `${g.pct}%`;
+    $('plantGrow').textContent = g.text;
+    $('statDays').textContent = dayDiff(plant.started, today()) + 1;
+    $('statWater').textContent = waterCount();
+    const last = lastWater();
+    $('statLast').textContent = !last ? '-' : last === today() ? '今日' : `${dayDiff(last, today())}日前`;
+    $('road').innerHTML = STAGES.map((s, i) => `<div class="${i <= si ? 'done-st' : ''}${i === si ? ' now' : ''}"><i></i>${s.name}</div>`).join('');
+  }
+  $('plantMain').addEventListener('click', () => { shake($('plantMain')); say('Main', mood()); });
+
+  function fillSummary(kind) {
+    const dt = $('datetime').value || nowLocal();
+    $('doneTitle').textContent = `${kind}登録が完了しました`;
+    $('sumUser').textContent = USER_ID;
+    $('sumTime').textContent = dt.replace('T', ' ').replace(/-/g, '/');
+    $('sumComment').textContent = $('comment').value || '—';
+  }
+  function setDonePanel() {
+    const g = growInfo();
+    $('doneBar').style.width = `${g.pct}%`;
+    $('doneGrow').textContent = g.text;
+  }
+
+  // 在席：1日1回、水やり
+  $('btnIn').addEventListener('click', () => {
+    fillSummary('在席');
+    const day = ($('datetime').value || nowLocal()).slice(0, 10);
+    const already = plant.days.includes(day);
+    const beforeStage = stageIndex(), beforeMood = mood();
+    $('roomDone').className = 'room day';
+    $('btnToPlant').textContent = `${plant.name}の様子を見る`;
+    $('plantDone').classList.remove('shake', 'grow');
+
+    if (already) {
+      $('plantDone').innerHTML = plantSVG(beforeStage, beforeMood);
+      $('doneMsg').textContent = '今日はもう水やり済みです';
+      $('doneSub').textContent = `${plant.name}はおなかいっぱい。また明日ね！`;
+      setDonePanel();
+      show('screen-done');
+      return;
+    }
+
+    $('plantDone').innerHTML = plantSVG(beforeStage, beforeMood);
+    $('doneMsg').textContent = `${plant.name}に水をあげています…`;
+    $('doneSub').textContent = '';
+    setDonePanel();
+    show('screen-done');
+
+    plant.days.push(day);
+    plant.days.sort();
+    save();
+    const afterStage = stageIndex();
+
+    ['can', 'drops'].forEach(id => { $(id).classList.remove('go'); void $(id).offsetWidth; $(id).classList.add('go'); });
+    setTimeout(() => $('drops').classList.remove('go'), 2000);
+    setTimeout(() => {
+      $('plantDone').innerHTML = plantSVG(afterStage, 'happy', { wet: true });
+      const p = $('plantDone'); p.classList.remove('grow'); void p.offsetWidth; p.classList.add('grow');
+      ['sp1', 'sp2', 'sp3'].forEach((id, i) => setTimeout(() => { $(id).classList.remove('go'); void $(id).offsetWidth; $(id).classList.add('go'); }, i * 150));
+      $('doneMsg').textContent = beforeMood === 'wilted' ? `しおれていた${plant.name}が元気になった！` : `${plant.name}に水をあげました！`;
+      $('doneSub').textContent = `水やり ${waterCount()}日目。今日もいっしょにがんばろう`;
+      setDonePanel();
+      say('Done', 'happy');
+      if (afterStage > beforeStage) setTimeout(() => celebrate(afterStage), 1200);
+    }, 2100);
+  });
+
+  // 退席：夜の部屋でおやすみ
+  $('btnOut').addEventListener('click', () => {
+    fillSummary('退席');
+    const watered = plant.days.includes(today());
+    $('roomDone').className = 'room night';
+    $('plantDone').classList.remove('shake', 'grow');
+    $('plantDone').innerHTML = plantSVG(stageIndex(), mood() === 'wilted' ? 'wilted' : 'sleep');
+    $('doneMsg').textContent = `${plant.name}もおやすみなさい`;
+    $('doneSub').textContent = watered ? '今日の水やりはばっちり。ゆっくり休んでね' : '今日は水やりができませんでした。次の在席でお水をあげてね';
+    $('btnToPlant').textContent = `${plant.name}の様子を見る`;
+    setDonePanel();
+    show('screen-done');
+  });
+  $('plantDone').addEventListener('click', () => {
+    shake($('plantDone'));
+    say('Done', $('roomDone').classList.contains('night') ? (mood() === 'wilted' ? 'wilted' : 'sleep') : mood());
+  });
+
+  function celebrate(si) {
+    $('celebratePic').innerHTML = plantSVG(si, 'happy');
+    $('celebrateTitle').textContent = `${plant.name}が「${STAGES[si].name}」に育った！`;
+    $('celebrateText').textContent = `水やり${waterCount()}日目のできごとです`;
+    $('celebrate').classList.add('open');
+    for (let i = 0; i < 26; i++) {
+      const f = document.createElement('span');
+      f.className = 'falling';
+      f.textContent = ['🍃', '🌿', '✨', '🌸'][i % 4];
+      f.style.left = `${Math.random() * 100}vw`;
+      f.style.animationDuration = `${2.5 + Math.random() * 2}s`;
+      f.style.animationDelay = `${Math.random() * .8}s`;
+      document.body.appendChild(f);
+      setTimeout(() => f.remove(), 5500);
+    }
+  }
+  $('btnCelebrate').addEventListener('click', () => $('celebrate').classList.remove('open'));
+
+  $('btnRename').addEventListener('click', () => {
+    const v = prompt('植物の名前を入力してください', plant.name);
+    if (v && v.trim()) { plant.name = v.trim().slice(0, 12); save(); renderPlantScreen(); }
+  });
+  // デモ用：過去の日付で水やり履歴を追加 / 放置 / リセット
+  $('demoWater').addEventListener('click', () => {
+    const before = stageIndex();
+    plant.days = plant.days.map(d => shiftDay(d, -5));
+    plant.started = shiftDay(plant.started, -5);
+    for (let i = 4; i >= 0; i--) plant.days.push(shiftDay(today(), -i));
+    plant.days = [...new Set(plant.days)].sort();
+    save(); renderPlantScreen();
+    if (stageIndex() > before) celebrate(stageIndex());
+  });
+  $('demoSkip').addEventListener('click', () => {
+    plant.days = plant.days.map(d => shiftDay(d, -3));
+    plant.started = shiftDay(plant.started, -3);
+    save(); renderPlantScreen();
+  });
+  $('demoReset').addEventListener('click', () => {
+    if (!confirm('植物をはじめから育て直しますか？')) return;
+    plant = fresh(); save(); renderPlantScreen();
+  });
+</script>
+</body>
+</html>
